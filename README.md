@@ -22,5 +22,5 @@ This is a weather forecasting application built with React and Material UI. It p
 - git clone https://github.com/idrissaktass/weather_app.git
 - cd weather_app
 - npm install
-- create .env.local file and add your REACT_APP_API_KEY there.
+- Create a `.env.local` file in the **root directory** and add your REACT_APP_API_KEY there.
 - npm start
