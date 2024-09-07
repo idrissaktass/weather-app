@@ -1,0 +1,14 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.App {
+    background-image: url("data/sky1.jpg");;
+    background-size: cover;
+    background-position: center; /* Centers the image */
+    background-repeat: no-repeat; /* Avoids repeating the image */
+    min-height: 100vh; /* Makes sure the .App div covers the full height */
+    
+}
