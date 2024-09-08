@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid2, Input, InputAdornment, Typography, List, ListItem, ListItemText, IconButton,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow  } from "@mui/material";
 import { Search, Clear, AcUnitOutlined, ThunderstormOutlined, CloudOutlined, WbSunnyOutlined } from '@mui/icons-material';
 import MainImage from "../data/mainImage.png";
 import { fetchData } from '../api/api';
@@ -22,6 +22,8 @@ import Snowy from "../data/snowy.jpg";
 import Rainy from "../data/rainy.jpg";
 import Sunny from "../data/sunny.jpg";
 import Cloudy from "../data/cloudy.jpg";
+import PartiallyCloud from "../data/partiallyCloudy.jpg";
+import { LineChart, areaElementClasses  } from '@mui/x-charts/LineChart';
 
 const cache = {};
 
@@ -34,10 +36,14 @@ const MainScreen = () => {
     const [istanbul, setIstanbul] = useState([]);
     const [izmir, setIzmir] = useState([]);
     const [Ankara, setAnkara] = useState([]);
+    const [current, setCurrent] = useState("");
+    const [xAxisData, setXAxisData] = useState([]);
+    const [seriesData, setSeriesData] = useState([]);
 
     const normalizeString = (str) => {
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
+
 
     const fetchCityData = async () => {
         setLoading(true);
@@ -107,31 +113,33 @@ const MainScreen = () => {
 
     console.log("xd",Ankara, istanbul, izmir)
     
-    const handleSearch = async () => {
-        if (!searchTerm) return;
+    const handleSearch = async (city = null) => {
+        const term = city || searchTerm;
+        if (!term) return;
     
         setLoading(true);
-        const normalizedSearchTerm = normalizeString(searchTerm);
+        const normalizedSearchTerm = normalizeString(term);
     
         if (cache[normalizedSearchTerm]) {
             console.log('Using cached data');
             setWeatherData(cache[normalizedSearchTerm]);
-            setSelectedCity(searchTerm);
+            setSelectedCity(term);
             setLoading(false);
             return;
         }
     
         try {
-            const result = await fetchData(searchTerm);
+            const result = await fetchData(term);
     
             if (result && normalizeString(result.address) === normalizedSearchTerm) {
-                const dataToCache = result.days.slice(0, 7); // Assuming you want the first 7 days of forecast
+                const dataToCache = result.days.slice(0, 7);
                 cache[normalizedSearchTerm] = dataToCache;
                 setWeatherData(dataToCache);
+                setCurrent(result.currentConditions);
                 setSelectedCity(result.address);
             } else {
                 setWeatherData(null);
-                setSelectedCity(searchTerm);
+                setSelectedCity(term);
             }
         } catch (error) {
             console.error('Error fetching city data:', error);
@@ -139,7 +147,20 @@ const MainScreen = () => {
             setLoading(false);
         }
     };
+
     
+    const groupByHours = (hours, chunkSize) => {
+        const result = [];
+        for (let i = 0; i < hours?.length; i += chunkSize) {
+            result.push(hours?.slice(i, i + chunkSize));
+        }
+        return result;
+    };
+
+    const hours = weatherData[selectedDay]?.hours;
+    const hourlyGroups = groupByHours(hours, 3);
+
+
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
             handleSearch();
@@ -177,6 +198,32 @@ const MainScreen = () => {
         return `${day}, ${month < 10 ? `0${month}` : month}`;
     };
     
+    const chartData = hours?.map(hour => ({
+        time: hour.datetime.split(':')[0] + ":00",
+        temperature: fahrenheitToCelsius(hour.temp),
+    }));
+
+    console.log("chartData:", chartData?.map(point => point.temperature));
+
+    // setXAxisData(chartData?.map(point => point.time));
+    // setSeriesData(chartData?.map(point => point.temperature));
+    // console.log("axis",xAxisData)
+
+
+    // useEffect(() => {
+    //     if (selectedCity && hours) {
+    //         const chartData = hours?.map(hour => ({
+    //             time: hour.datetime.split(':')[0] + ":00",
+    //             temperature: fahrenheitToCelsius(hour.temp),
+    //         }));
+
+    //         console.log("chartData:", chartData);
+
+    //         setXAxisData(chartData?.map(point => point.time));
+    //         setSeriesData(chartData?.map(point => point.temperature));
+    //         console.log("axis",xAxisData)
+    //     }
+    // }, [selectedCity, hours]);
 
     const getWeatherIcon = (conditions) => {
 
@@ -232,7 +279,8 @@ const MainScreen = () => {
                             transform: 'translate(-50%, -50%)',
                             objectFit: 'cover',
                             height: '100%',
-                            width: 'auto'
+                            width: 'auto',
+                            borderRadius:"10px"
                         }}
                     />
                 )}
@@ -244,8 +292,8 @@ const MainScreen = () => {
         const desc = conditions.toLowerCase();
         const imageSrc = desc.includes('snow') ? Snowy :
                          desc.includes('rain') ? Rainy :
-                         desc.includes('cloud') ? Cloudy :
                          desc.includes('clear') ? Sunny :
+                         desc === "partially cloudy" ? PartiallyCloud:
                          null; 
     
         return (
@@ -271,15 +319,33 @@ const MainScreen = () => {
                             transform: 'translate(-50%, -50%)', 
                             objectFit: 'cover', 
                             height: '100%', 
-                            width: 'auto' 
+                            width: 'auto' ,
+                            borderRadius:"10px"
                         }} 
                     />
                 )}
             </Box>
         );
     };
-    
 
+    const getWeatherAdvice = (conditions, temp) => {
+        const celsiusTemp = fahrenheitToCelsius(temp);
+        
+        if ((conditions.includes("cloudy") || conditions.includes("Clear")) && celsiusTemp > 20) {
+            return "Ideal day for a picnic!";
+        } else if (conditions.includes("Rain") || conditions.includes("Overcast")) {
+            return "It may rain, don't forget to take your umbrella or raincoat when you go out";
+        } else if (conditions.includes("Snow")) {
+            return "It may snow, cold weather awaits you, don't forget to drink something warm!";
+        } else if (celsiusTemp < 0) {
+            return "Don't you dare freeze!";
+        } else if (celsiusTemp > 40) {
+            return "Between 11.00-16.00, think twice before going out and don't shoot at the sun!";
+        } else {
+            return "Have a great day!";
+        }
+    };
+    
     return (
         <Grid2 container direction={{ xs: 'column-reverse', sm: 'column-reverse', md: 'row' }} gap={{xs:10, md:0}} 
             alignItems={{xs:"center", md:"start"}} justifyContent={"space-evenly"} pt={15} pb={5}>
@@ -344,7 +410,8 @@ const MainScreen = () => {
                     </Box>
                 ) : (
                     <Carousel>
-                        <Box textAlign={'center'} sx={{backgroundColor:"#ffffff91", padding:"40px", 
+                        <Box onClick={() => {handleSearch("ankara"); setSearchTerm("ankara")}} textAlign={'center'} 
+                            sx={{backgroundColor:"#ffffff91", padding:"40px", cursor:"pointer",
                             boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px"}}>
                             <Box display={'flex'} flexDirection={'column'} gap={"5px"} justifyContent={'center'} alignItems={'center'} >
                                 {Ankara.length > 0 && getCityImages("ankara", Ankara[0].conditions)}
@@ -365,7 +432,8 @@ const MainScreen = () => {
                                 </Box>
                             </Box>
                         </Box>
-                        <Box textAlign={'center'} sx={{backgroundColor:"#ffffff91", padding:"40px", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px"}}>
+                        <Box onClick={() => {handleSearch("istanbul"); setSearchTerm("istanbul")}} textAlign={'center'} sx={{backgroundColor:"#ffffff91", 
+                            padding:"40px", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px", cursor:"pointer"}}>
                             <Box display={'flex'} flexDirection={'column'} gap={"5px"} justifyContent={'center'} alignItems={'center'}>
                                 {istanbul.length > 0 && getCityImages("istanbul", istanbul[0].conditions)}
                                 <Typography color="#296573" fontSize={ "56px" } fontWeight={"700"}> {istanbul.length > 0 ? `${fahrenheitToCelsius(istanbul[0].tempmax)} °C` : 'No data'}</Typography>
@@ -385,7 +453,8 @@ const MainScreen = () => {
                                 </Box>
                             </Box>
                         </Box>
-                        <Box textAlign={'center'} sx={{backgroundColor:"#ffffff91", padding:"40px", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px"}}>
+                        <Box onClick={() => {handleSearch("izmir"); setSearchTerm("izmir")}} textAlign={'center'} sx={{backgroundColor:"#ffffff91", 
+                            padding:"40px", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px", cursor:"pointer"}}>
                             <Box display={'flex'} flexDirection={'column'} gap={"5px"} justifyContent={'center'} alignItems={'center'}>
                                 {izmir.length > 0 && getCityImages("izmir", izmir[0].conditions)}
                                 <Typography color="#296573" fontSize={ "56px" } fontWeight={"700"}>{izmir.length > 0 ? `${fahrenheitToCelsius(izmir[0].tempmax)} °C` : 'No data'} </Typography>
@@ -408,7 +477,7 @@ const MainScreen = () => {
                     </Carousel>
                 )}
             </Grid2>
-            <Grid2 size={{ xs: 8, sm: 7, md: 3.5, lg: 4, xl: 3 }} display={"flex"} flexDirection={"column"} gap={4}>
+            <Grid2 size={{ xs: 11, sm: 8, md: 4.5, lg: 4, xl: 3 }} display={"flex"} flexDirection={"column"} gap={4}>
                 <Input fullWidth disableUnderline placeholder="Search City"
                     sx={{ border: "1px solid #DBDFE9", borderRadius: "10px", padding: {xs:"5px", sm:"14px"}, backgroundColor:"#ffffff91",
                         fontSize: {xs:"18px", sm:"20px"}, boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)"}}
@@ -430,26 +499,54 @@ const MainScreen = () => {
                     } value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={handleKeyDown}
                 />
                 {selectedCity && weatherData ? (
-                    <Box bgcolor={"#ffffff91"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "20px", lg: "30px" }, textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
-                        {getWeatherImages(weatherData[selectedDay].conditions)}
-                        <Box display="flex" alignItems="center" justifyContent={"center"} gap={"5px"} mt={1}>
-                            {getWeatherIcon(weatherData[selectedDay].conditions)}
-                            <Typography color="#296573" fontSize={{xs:"16px", sm:"18px"}} fontWeight={"400"}>
-                                {weatherData[selectedDay].conditions}
+                    <Box bgcolor={"#ffffff91"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "10px", sm:"20px"}, textAlign: "center", boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
+                    {/* Existing weather details */}
+                    <Box display="flex" alignItems="center" flexDirection={'column'} justifyContent={"center"} gap={"5px"} mt={1}>
+                        {selectedDay !== 0 ? getWeatherImages(weatherData[selectedDay].conditions) : getWeatherImages(current.conditions)}
+                        <Typography color="#296573" fontSize={{ xs: "16px", sm: "18px" }} fontWeight={"400"} sx={{display:"flex", alignItems:"center"}}>
+                            {selectedDay !== 0 ? getWeatherIcon(weatherData[selectedDay].conditions) : getWeatherIcon(current.conditions)}
+                            {selectedDay !== 0 ? weatherData[selectedDay].conditions : current.conditions}
+                        </Typography>
+                    </Box>
+                    <Box display={'flex'} flexDirection={'column'} gap={"5px"}>
+                        <Typography color="#296573" fontSize={"56px"} fontWeight={"700"}>
+                            {selectedDay !== 0 ? fahrenheitToCelsius(weatherData[selectedDay].tempmax) : fahrenheitToCelsius(current.temp)} °C
+                        </Typography>
+                        <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
+                            <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
+                                {selectedCity}
+                            </Typography>
+                            <Typography color="#313131" fontSize={{ xs: "14px", sm: "16px" }} fontWeight={"400"}>
+                                {formatDate(weatherData[selectedDay].datetime)}
                             </Typography>
                         </Box>
-                        <Box display={'flex'} flexDirection={'column'} gap={"5px"}>
-                            <Typography color="#296573" fontSize={ "56px" } fontWeight={"700"}>{fahrenheitToCelsius(weatherData[selectedDay].tempmax)} °C</Typography>
-                            <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
-                                <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
-                                    {selectedCity}
-                                </Typography>
-                                <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
-                                    {formatDate(weatherData[selectedDay].datetime)}
-                                </Typography>
-                            </Box>
-                        </Box>
                     </Box>
+
+                    {/* Hourly forecast carousel */}
+                    <Box mt={2}>
+                        <Carousel>
+                            {hourlyGroups.map((group, index) => (
+                                <Grid2 container justifyContent={'center'} spacing={3} key={index}>
+                                    {group.map((hour, i) => (
+                                        <Grid2 item key={i} size={{xs:3, sm:4}} display={'flex'} justifyContent={'center'}>
+                                            <Box sx={{ minWidth: "100px", textAlign: "center" }}>
+                                                <Typography fontSize="14px">{hour.datetime.split(':')[0]}:00</Typography> {/* Show the hour */}
+                                                <Typography fontSize="16px" fontWeight="700">{fahrenheitToCelsius(hour.temp)}°C</Typography> {/* Show the temperature */}
+                                                <Typography fontSize="12px" color="gray">{hour.conditions}</Typography> {/* Show conditions */}
+                                            </Box>
+                                        </Grid2>
+                                    ))}
+                                </Grid2>
+                            ))}
+                        </Carousel>
+                    </Box>
+
+                    <Box display="flex" alignItems="center" justifyContent={"center"} gap={"5px"} mt={1}>
+                        <Typography color="#296573" fontSize={{ xs: "16px", sm: "18px" }} fontWeight={"400"}>
+                            {getWeatherAdvice(selectedDay !== 0 ? weatherData[selectedDay].conditions : current.conditions, selectedDay !== 0 ? weatherData[selectedDay].tempmax : current.temp)}
+                        </Typography>
+                    </Box>
+                </Box>
                 ) : selectedCity && !weatherData ? (
                     <Box bgcolor={"#ffffff91"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "20px", lg: "40px" }, textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
                         <Typography color="#313131" fontSize={{ xs: "28px", md: "32px" }} fontWeight={"700"}>Does not Exist</Typography>
@@ -466,6 +563,29 @@ const MainScreen = () => {
                     </Box>
                 )}
             </Grid2>
+            <Box mt={2} sx={{ height: '300px', width: '100%' }}>
+                <Typography fontSize={{ xs: "18px", sm: "20px" }} fontWeight="600" color="#296573">Temperature Trend</Typography>
+                {selectedCity && (
+                                    <Grid2>
+                        <LineChart
+                            xAxis={[{scaleType: 'point', data: chartData?.map(point => point.time) }]}
+                            series={[
+                                {
+                                    data: chartData?.map(point => point.temperature),
+                                    area: true, showMark: false 
+                                }
+                            ]}
+                            width={500}
+                            height={300}
+                            sx={{
+                                [`& .${areaElementClasses.root}`]: {
+                                  fill: 'yellow',
+                                },
+                              }}                      
+                        />
+                </Grid2>
+                )}
+            </Box>
         </Grid2>
     );
 };
