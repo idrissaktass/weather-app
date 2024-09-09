@@ -420,6 +420,7 @@ const MainScreen = () => {
         return nextThreeHours;
     };      
     const nextThreeHours = getNextThreeHours(hourlyGroups);
+    console.log("weatherData",weatherData)
     return (
         <Grid2 container justifyContent={'center'} pt={15} gap={2} alignItems={selectedCity && {xs:"center", lg:"start"}} direction={selectedCity ? {xs:"column-reverse", lg:"row"}  : "row-reverse"}>
             {loading ?( <LoadingSpinner/>) :(
@@ -476,7 +477,7 @@ const MainScreen = () => {
                                                         fontSize={{ xs: "24px", sm: "32px" }}
                                                         ml={1} // Add margin left for spacing
                                                     >
-                                                        {fahrenheitToCelsius(day.temp)} °C
+                                                        {fahrenheitToCelsius(day.tempmax)} °C
                                                     </Typography>
                                                 </Box>
                                             </Box>
