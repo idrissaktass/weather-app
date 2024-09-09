@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid2, Input, InputAdornment, Typography, List, ListItem, ListItemText, IconButton,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow  } from "@mui/material";
+import { Box, Grid2, Input, InputAdornment, Typography, IconButton,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, InputLabel, MenuItem, FormControl, Select,  
+    useMediaQuery, useTheme } from "@mui/material";
 import { Search, Clear, AcUnitOutlined, ThunderstormOutlined, CloudOutlined, WbSunnyOutlined } from '@mui/icons-material';
 import MainImage from "../data/mainImage.png";
 import { fetchData } from '../api/api';
@@ -21,14 +22,22 @@ import IstanbulSnow from "../data/istanbulSnow.jpg";
 import Snowy from "../data/snowy.jpg";
 import Rainy from "../data/rainy.jpg";
 import Sunny from "../data/sunny.jpg";
-import Cloudy from "../data/cloudy.jpg";
+// import Cloudy from "../data/cloudy.jpg";
 import PartiallyCloud from "../data/partiallyCloudy.jpg";
 import { LineChart, areaElementClasses  } from '@mui/x-charts/LineChart';
+import PartiallyCloudy from "../data/weather.gif"
+import Cloudy from "../data/cloudy.gif"
+import SunnyIcon from "../data/sunny.gif"
+import RainyIcon from "../data/rainy.gif"
+import Storm from "../data/storm.gif"
+import Snow from "../data/snow.gif"
+import Humidity from "../data/humidity.png"
 
 const cache = {};
 
 const MainScreen = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [isCity, setIsCity] = useState(false);
     const [weatherData, setWeatherData] = useState([]);
     const [selectedCity, setSelectedCity] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -39,11 +48,17 @@ const MainScreen = () => {
     const [current, setCurrent] = useState("");
     const [xAxisData, setXAxisData] = useState([]);
     const [seriesData, setSeriesData] = useState([]);
+    const [filter, setFilter] = useState('temperature');
+    const theme = useTheme();
+    const isXs = useMediaQuery(theme.breakpoints.only('xs'));
 
     const normalizeString = (str) => {
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
     };
 
+    const handleFilter = (event) => {
+        setFilter(event.target.value);
+      };    
 
     const fetchCityData = async () => {
         setLoading(true);
@@ -110,16 +125,13 @@ const MainScreen = () => {
     useEffect(() => {
         fetchCityData();
     }, []);
-
-    console.log("xd",Ankara, istanbul, izmir)
     
     const handleSearch = async (city = null) => {
         const term = city || searchTerm;
         if (!term) return;
-    
+        console.log("handlesearch")
         setLoading(true);
         const normalizedSearchTerm = normalizeString(term);
-    
         if (cache[normalizedSearchTerm]) {
             console.log('Using cached data');
             setWeatherData(cache[normalizedSearchTerm]);
@@ -132,7 +144,7 @@ const MainScreen = () => {
             const result = await fetchData(term);
     
             if (result && normalizeString(result.address) === normalizedSearchTerm) {
-                const dataToCache = result.days.slice(0, 7);
+                const dataToCache = result.days.slice(0, 5);
                 cache[normalizedSearchTerm] = dataToCache;
                 setWeatherData(dataToCache);
                 setCurrent(result.currentConditions);
@@ -145,10 +157,11 @@ const MainScreen = () => {
             console.error('Error fetching city data:', error);
         } finally {
             setLoading(false);
+            setIsCity(true)
         }
     };
 
-    
+    console.log("data",weatherData)
     const groupByHours = (hours, chunkSize) => {
         const result = [];
         for (let i = 0; i < hours?.length; i += chunkSize) {
@@ -158,7 +171,7 @@ const MainScreen = () => {
     };
 
     const hours = weatherData[selectedDay]?.hours;
-    const hourlyGroups = groupByHours(hours, 3);
+    const hourlyGroups = groupByHours(hours, isXs ? 3 : 6);
 
 
     const handleKeyDown = (e) => {
@@ -171,6 +184,7 @@ const MainScreen = () => {
         setSearchTerm('');
         setSelectedCity(null)
         setWeatherData([]);
+        setIsCity(false)
     };
 
     const handleRowClick = (index) => {
@@ -198,12 +212,46 @@ const MainScreen = () => {
         return `${day}, ${month < 10 ? `0${month}` : month}`;
     };
     
-    const chartData = hours?.map(hour => ({
-        time: hour.datetime.split(':')[0] + ":00",
-        temperature: fahrenheitToCelsius(hour.temp),
-    }));
+    // const chartData = hours?.map(hour => ({
+    //     time: hour.datetime.split(':')[0] + ":00",
+    //     temperature: fahrenheitToCelsius(hour.temp),
+    // }));
 
-    console.log("chartData:", chartData?.map(point => point.temperature));
+    // const chartData = [
+    //     { time: "00:00", temperature: 18, humidity: 80, conditions: "clear" },
+    //     { time: "01:00", temperature: 17, humidity: 70, conditions: "rain partially cloud"  },
+    //     { time: "02:00", temperature: 16, humidity: 90, conditions: "clear"  },
+    //     { time: "03:00", temperature: 16, humidity: 80, conditions: "rain partially cloud"  },
+    //     { time: "04:00", temperature: 15, humidity: 70, conditions: "clear"  },
+    //     { time: "05:00", temperature: 15, humidity: 60, conditions: "snow"  },
+    //     { time: "06:00", temperature: 14, humidity: 50, conditions: "clear"  },
+    //     { time: "07:00", temperature: 15, humidity: 60, conditions: "rain partially cloud"  },
+    //     { time: "08:00", temperature: 16, humidity: 60, conditions: "partially cloud"  },
+    //     { time: "09:00", temperature: 18, humidity: 80, conditions: "partially cloud"  },
+    //     { time: "10:00", temperature: 20, humidity: 70, conditions: "clear"  },
+    //     { time: "11:00", temperature: 22, humidity: 80, conditions: "clear"  },
+    //     { time: "12:00", temperature: 24, humidity: 60, conditions: "clear"  },
+    //     { time: "13:00", temperature: 25, humidity: 90, conditions: "rainy"  },
+    //     { time: "14:00", temperature: 26, humidity: 70, conditions: "rain partially cloud"  },
+    //     { time: "15:00", temperature: 27, humidity: 80, conditions: "clear"  },
+    //     { time: "16:00", temperature: 28, humidity: 60, conditions: "rain partially cloud"  },
+    //     { time: "17:00", temperature: 27, humidity: 80, conditions: "clear"  },
+    //     { time: "18:00", temperature: 26, humidity: 90, conditions: "partially cloud"  },
+    //     { time: "19:00", temperature: 24, humidity: 80, conditions: "clear"  },
+    //     { time: "20:00", temperature: 22, humidity: 60, conditions: "rainy"  },
+    //     { time: "21:00", temperature: 21, humidity: 70, conditions: "clear"  },
+    //     { time: "22:00", temperature: 20, humidity: 80, conditions: "clear"  },
+    //     { time: "23:00", temperature: 19, humidity: 70, conditions: "rainy"  }
+    // ];
+
+    // const chartData2 = [
+    //     { day: "0", temperature: 18, humidity: 80, datetime: "2024-09-09", conditions: "clear" },
+    //     { day: "1", temperature: 17, humidity: 70, datetime: "2024-09-10", conditions: "rain partially cloud"   },
+    //     { day: "2", temperature: 16, humidity: 90, datetime: "2024-09-11", conditions: "rainy"   },
+    //     { day: "3", temperature: 16, humidity: 80 , datetime: "2024-09-12", conditions: "partially cloud"  },
+    //     { day: "4", temperature: 14, humidity: 50 , datetime: "2024-09-15", conditions: "snow"  },
+    // ];
+
 
     // setXAxisData(chartData?.map(point => point.time));
     // setSeriesData(chartData?.map(point => point.temperature));
@@ -229,17 +277,25 @@ const MainScreen = () => {
 
         const desc = conditions.toLowerCase();
 
-        if (desc.includes('snow ')) {
-            return <AcUnitOutlined sx={{color:'#296573'}}/>
+        if (desc.includes('snow')) {
+            // return <AcUnitOutlined sx={{color:'#296573'}}/>
+            return <Box component="img" src={Snow} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>
         }
-        if (desc.includes('rain') && !desc.includes('snow ')) {
-            return <ThunderstormOutlined sx={{color:'#296573'}}/>
+        if (desc.includes('rain') && !desc.includes('snow')) {
+            // return <ThunderstormOutlined sx={{color:'#296573'}}/>
+            return <Box component="img"  src={RainyIcon} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>
         }
-        if (desc.includes('cloud') && !desc.includes('rain') && !desc.includes('snow ')) {
-            return <CloudOutlined sx={{color:'#296573'}}/>
+        if (desc.includes('cloud') && !desc.includes('rain') && !desc.includes('snow') && !desc.includes('partially')) {
+            // return <CloudOutlined sx={{color:'#296573'}}/>
+            return <Box component="img"  src={Cloudy} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>
         }
         if (desc.includes('clear')) {
-            return <WbSunnyOutlined sx={{color:'#296573'}}/>
+            // return <WbSunnyOutlined sx={{color:'#296573'}}/>
+            return <Box component="img"  src={SunnyIcon} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>
+        }
+        if (desc.includes('partially') && !desc.includes('rain')) {
+            // return <Box component="img" src='../data/weather.gif' sx={{width:'100%', height:"auto"}}/>
+            return <Box component="img"  src={PartiallyCloudy} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>
         }
     };
     const getCityImages = (city, conditions) => {
@@ -345,247 +401,408 @@ const MainScreen = () => {
             return "Have a great day!";
         }
     };
-    
-    return (
-        <Grid2 container direction={{ xs: 'column-reverse', sm: 'column-reverse', md: 'row' }} gap={{xs:10, md:0}} 
-            alignItems={{xs:"center", md:"start"}} justifyContent={"space-evenly"} pt={15} pb={5}>
-            <Grid2 size={{ xs: 11.2, sm: 9, md: 6.5, lg: selectedCity ? 7 : 4.5, xl: selectedCity ? 6 : 4 }}>
-                {loading ? (
-                    <LoadingSpinner />
-                ) : selectedCity && weatherData ? (
-                    <Box>
-                        <TableContainer sx={{ backgroundColor:"#ffffff91", borderRadius: "12px", border: "1px solid #DBDFE9", padding: "20px 0px 0px 0px", textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
-                            <Typography width={"max-content"} textAlign={'left'} color='#071437' fontSize={"20px"} fontWeight={"600"} marginTop={1} marginLeft={2} marginBottom={2}>
-                                Weather Forecast for <span style={{ textTransform: 'capitalize', color:"#296573" }}>{selectedCity}</span>
-                            </Typography>
-                            <Table>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell sx={{ backgroundColor: "#fcfcfc8a", border: "1px solid #F1F1F4", padding:{xs:"15px 5px 15px 5px", sm:"16px"}, textAlign:{xs:"center", sm:"left"} }}>
-                                            <Typography fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"} color='#4B5675'>Days</Typography>
-                                        </TableCell>
-                                        <TableCell sx={{ backgroundColor: "#fcfcfc8a", border: "1px solid #F1F1F4", padding:{xs:"15px 5px 15px 5px", sm:"16px"}, textAlign:{xs:"center", sm:"left"} }}>
-                                            <Typography fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"} color='#4B5675'>Lowest Temp.</Typography>
-                                        </TableCell>
-                                        <TableCell sx={{ backgroundColor: "#fcfcfc8a", border: "1px solid #F1F1F4", padding:{xs:"15px 5px 15px 5px", sm:"16px"}, textAlign:{xs:"center", sm:"left"} }}>
-                                            <Typography fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"} color='#4B5675'>Highest Temp.</Typography>
-                                        </TableCell>
-                                        <TableCell sx={{ backgroundColor: "#fcfcfc8a", border: "1px solid #F1F1F4", padding:{xs:"15px 5px 15px 5px", sm:"16px"}, textAlign:{xs:"center", sm:"left"} }}>
-                                            <Typography fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"} color='#4B5675'>conditions</Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {weatherData?.map((day, index) => (
-                                        <TableRow key={index} onClick={() => handleRowClick(index)}
-                                            sx={{
-                                                cursor: 'pointer',
-                                                backgroundColor: selectedDay === index ? '#E0F7FA !important' : 'transparent',
-                                                '&:hover': {
-                                                    backgroundColor: '#fcfcfc8a'
-                                                }
-                                            }}>
-                                            <TableCell sx={{border: "1px solid #F1F1F4", padding:{xs:"15px 5px 15px 5px", sm:"16px"},
-                                                textAlign:{xs:"center", sm:"left"} }}>
-                                                <Typography color='#252F4A' fontWeight={"500"} fontSize={{xs:"16px", sm:"18px"}}>{getDayName(day.datetime)}</Typography>
-                                                <Typography color='#252F4A' fontWeight={"400"} fontSize={{xs:"16px", sm:"18px"}}> {formatDayMonth(day.datetime)}</Typography>
-                                            </TableCell>
-                                            <TableCell sx={{border: "1px solid #F1F1F4", padding:{xs:"15px 5px 15px 5px", sm:"16px"}, 
-                                                textAlign:{xs:"center", sm:"left"} }}>
-                                                <Typography color='#252F4A' fontWeight={"400"} fontSize={{xs:"16px", sm:"18px"}}>{Math.round(fahrenheitToCelsius(day.tempmin))} °C</Typography>
-                                            </TableCell>
-                                            <TableCell sx={{border: "1px solid #F1F1F4", padding:{xs:"15px 5px 15px 5px", sm:"16px"}, 
-                                                textAlign:{xs:"center", sm:"left"} }}>
-                                                <Typography color='#252F4A' fontWeight={"400"} fontSize={{xs:"16px", sm:"18px"}}>{Math.round(fahrenheitToCelsius(day.tempmax))} °C</Typography>
-                                            </TableCell>
-                                            <TableCell sx={{border: "1px solid #F1F1F4", padding:{xs:"15px 5px 15px 5px", sm:"16px"}, 
-                                                textAlign:{xs:"center", sm:"left"} }}>
-                                                <Typography color='#252F4A' fontWeight={"400"} fontSize={{xs:"16px", sm:"18px"}}>{day.conditions}</Typography>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                    </Box>
-                ) : (
-                    <Carousel>
-                        <Box onClick={() => {handleSearch("ankara"); setSearchTerm("ankara")}} textAlign={'center'} 
-                            sx={{backgroundColor:"#ffffff91", padding:"40px", cursor:"pointer",
-                            boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px"}}>
-                            <Box display={'flex'} flexDirection={'column'} gap={"5px"} justifyContent={'center'} alignItems={'center'} >
-                                {Ankara.length > 0 && getCityImages("ankara", Ankara[0].conditions)}
-                                <Typography color="#296573" fontSize={ "56px" } fontWeight={"700"}>{Ankara.length > 0 ? `${fahrenheitToCelsius(Ankara[0].tempmax)} °C` : 'No data'} </Typography>
-                                <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
-                                    <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
-                                        Ankara
-                                    </Typography>
-                                    <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
-                                        {Ankara.length > 0 && formatDate(Ankara[0].datetime)}
-                                    </Typography>
-                                </Box>
-                                <Box display="flex" alignItems="center" justifyContent={"center"} gap={"5px"}>
-                                    {Ankara.length > 0 && getWeatherIcon(Ankara[0].conditions)}
-                                    <Typography color="#296573" fontSize={{xs:"16px", sm:"18px"}} fontWeight={"400"}>
-                                    {Ankara.length > 0 && Ankara[0].conditions}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Box>
-                        <Box onClick={() => {handleSearch("istanbul"); setSearchTerm("istanbul")}} textAlign={'center'} sx={{backgroundColor:"#ffffff91", 
-                            padding:"40px", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px", cursor:"pointer"}}>
-                            <Box display={'flex'} flexDirection={'column'} gap={"5px"} justifyContent={'center'} alignItems={'center'}>
-                                {istanbul.length > 0 && getCityImages("istanbul", istanbul[0].conditions)}
-                                <Typography color="#296573" fontSize={ "56px" } fontWeight={"700"}> {istanbul.length > 0 ? `${fahrenheitToCelsius(istanbul[0].tempmax)} °C` : 'No data'}</Typography>
-                                <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
-                                    <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
-                                        İstanbul
-                                    </Typography>
-                                    <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
-                                        {istanbul.length > 0 && formatDate(istanbul[0].datetime)}
-                                    </Typography>
-                                </Box>
-                                <Box display="flex" alignItems="center" justifyContent={"center"} gap={"5px"}>
-                                    {istanbul.length > 0 && getWeatherIcon(istanbul[0].conditions)}
-                                    <Typography color="#296573" fontSize={{xs:"16px", sm:"18px"}} fontWeight={"400"}>
-                                    {istanbul.length > 0 && istanbul[0].conditions}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Box>
-                        <Box onClick={() => {handleSearch("izmir"); setSearchTerm("izmir")}} textAlign={'center'} sx={{backgroundColor:"#ffffff91", 
-                            padding:"40px", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px", cursor:"pointer"}}>
-                            <Box display={'flex'} flexDirection={'column'} gap={"5px"} justifyContent={'center'} alignItems={'center'}>
-                                {izmir.length > 0 && getCityImages("izmir", izmir[0].conditions)}
-                                <Typography color="#296573" fontSize={ "56px" } fontWeight={"700"}>{izmir.length > 0 ? `${fahrenheitToCelsius(izmir[0].tempmax)} °C` : 'No data'} </Typography>
-                                <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
-                                    <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
-                                        İzmir
-                                    </Typography>
-                                    <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
-                                        {izmir.length > 0 && formatDate(izmir[0].datetime)}
-                                    </Typography>
-                                </Box>
-                                <Box display="flex" alignItems="center" justifyContent={"center"} gap={"5px"}>
-                                    {izmir.length > 0 && getWeatherIcon(izmir[0].conditions)}
-                                    <Typography color="#296573" fontSize={{xs:"16px", sm:"18px"}} fontWeight={"400"}>
-                                    {izmir.length > 0 && izmir[0].conditions}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        </Box>
-                    </Carousel>
-                )}
-            </Grid2>
-            <Grid2 size={{ xs: 11, sm: 8, md: 4.5, lg: 4, xl: 3 }} display={"flex"} flexDirection={"column"} gap={4}>
-                <Input fullWidth disableUnderline placeholder="Search City"
-                    sx={{ border: "1px solid #DBDFE9", borderRadius: "10px", padding: {xs:"5px", sm:"14px"}, backgroundColor:"#ffffff91",
-                        fontSize: {xs:"18px", sm:"20px"}, boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)"}}
-                    startAdornment={
-                        searchTerm && (
-                            <InputAdornment position="start">
-                                <IconButton onClick={clearSearch}>
-                                    <Clear />
-                                </IconButton>
-                            </InputAdornment>
-                        )
-                    }
-                    endAdornment={
-                        <InputAdornment position="end">
-                            <IconButton onClick={handleSearch}>
-                                <Search />
-                            </IconButton>
-                        </InputAdornment>
-                    } value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={handleKeyDown}
-                />
-                {selectedCity && weatherData ? (
-                    <Box bgcolor={"#ffffff91"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "10px", sm:"20px"}, textAlign: "center", boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
-                    {/* Existing weather details */}
-                    <Box display="flex" alignItems="center" flexDirection={'column'} justifyContent={"center"} gap={"5px"} mt={1}>
-                        {selectedDay !== 0 ? getWeatherImages(weatherData[selectedDay].conditions) : getWeatherImages(current.conditions)}
-                        <Typography color="#296573" fontSize={{ xs: "16px", sm: "18px" }} fontWeight={"400"} sx={{display:"flex", alignItems:"center"}}>
-                            {selectedDay !== 0 ? getWeatherIcon(weatherData[selectedDay].conditions) : getWeatherIcon(current.conditions)}
-                            {selectedDay !== 0 ? weatherData[selectedDay].conditions : current.conditions}
-                        </Typography>
-                    </Box>
-                    <Box display={'flex'} flexDirection={'column'} gap={"5px"}>
-                        <Typography color="#296573" fontSize={"56px"} fontWeight={"700"}>
-                            {selectedDay !== 0 ? fahrenheitToCelsius(weatherData[selectedDay].tempmax) : fahrenheitToCelsius(current.temp)} °C
-                        </Typography>
-                        <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
-                            <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
-                                {selectedCity}
-                            </Typography>
-                            <Typography color="#313131" fontSize={{ xs: "14px", sm: "16px" }} fontWeight={"400"}>
-                                {formatDate(weatherData[selectedDay].datetime)}
-                            </Typography>
-                        </Box>
-                    </Box>
 
-                    {/* Hourly forecast carousel */}
-                    <Box mt={2}>
-                        <Carousel>
-                            {hourlyGroups.map((group, index) => (
-                                <Grid2 container justifyContent={'center'} spacing={3} key={index}>
-                                    {group.map((hour, i) => (
-                                        <Grid2 item key={i} size={{xs:3, sm:4}} display={'flex'} justifyContent={'center'}>
-                                            <Box sx={{ minWidth: "100px", textAlign: "center" }}>
-                                                <Typography fontSize="14px">{hour.datetime.split(':')[0]}:00</Typography> {/* Show the hour */}
-                                                <Typography fontSize="16px" fontWeight="700">{fahrenheitToCelsius(hour.temp)}°C</Typography> {/* Show the temperature */}
-                                                <Typography fontSize="12px" color="gray">{hour.conditions}</Typography> {/* Show conditions */}
+    const chunkArray = (array, chunkSize) => {
+        let result = [];
+        for (let i = 0; i < array.length; i += chunkSize) {
+          result.push(array.slice(i, i + chunkSize));
+        }
+        return result;
+      }
+      
+      const getNextThreeHours = (hourlyGroups) => {
+        const currentHour = new Date().getHours(); // Get the current hour
+        const flatHours = hourlyGroups.flat(); // Flatten the nested array if hourlyGroups is grouped
+        const nextThreeHours = flatHours.filter(hour => {
+            const hourNumber = parseInt(hour.datetime.split(':')[0]);
+            return hourNumber >= currentHour;
+        }).slice(0, 3); // Get the first 3 hours starting from the current hour
+        return nextThreeHours;
+    };      
+    const nextThreeHours = getNextThreeHours(hourlyGroups);
+    return (
+        <Grid2 container justifyContent={'center'} pt={15} gap={2} alignItems={selectedCity && {xs:"center", lg:"start"}} direction={selectedCity ? {xs:"column-reverse", lg:"row"}  : "row-reverse"}>
+            {loading ?( <LoadingSpinner/>) :(
+                <>
+                {selectedCity && (
+                    <Grid2 container size={{xs:11.8, sm:11, lg:8, xl:6}} display={'flex'} flexDirection={'column'} gap={2} mb={2}>
+                        <Typography width={{xs:"95%", sm:"fit-content"}} textAlign={{xs:"center", sm:'left'}} color='#071437' fontSize={{xs:"24px", sm:"28px", md:"32px"}} fontWeight={"500"}
+                        bgcolor={"#ffffffbf"} padding={"5px"} borderRadius={"12px"} alignSelf={{xs:"center", sm:"unset"}}>
+                            Weather Forecast for <span style={{ textTransform: 'capitalize', color:"#296573" }}>{selectedCity}</span>
+                        </Typography>      
+                        <Grid2 container size={12} borderRadius={"12px"} height={"fit-content"} justifyContent={'center'} display={'flex'} bgcolor={"#ffffffbf"} sx={{ borderLeft: "1px solid #DBDFE9", 
+                            textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>                      
+                            {weatherData?.map((day, index) => (
+                                <Grid2 key={index} size={{xs:12, sm:6, md:2.4}} borderRight={index === 4 ? "none" : "1px solid #DBDFE9"}
+                                padding={{xs:"10px 25px 10px 10px",sm:"20px", xl: "40px" }}  onClick={() => handleRowClick(index)}
+                                sx={{
+                                    cursor: 'pointer',
+                                    backgroundColor: selectedDay === index ? '#E0F7FA !important' : 'transparent',
+                                    '&:hover': {
+                                        backgroundColor: '#fcfcfc8a',
+                                    },
+                                    ...(index === 0 && { // Special hover effect only for the first item
+                                        borderRadius: '12px 0px 0px 12px',
+                                        '&:hover': {
+                                            backgroundColor: '#fcfcfc8a',
+                                            borderRadius: '12px 0px 0px 12px', // Keep borderRadius on hover only for the first item
+                                        }
+                                    }),
+                                    ...(index === 4 && { // Special hover effect only for the first item
+                                        borderRadius: '0px 12px 12px 0px',
+                                        '&:hover': {
+                                            backgroundColor: '#fcfcfc8a',
+                                            borderRadius: '0px 12px 12px 0px', // Keep borderRadius on hover only for the first item
+                                        }
+                                    })
+                                }}>
+                                    <Box
+                                        display="flex"
+                                        flexDirection={{ xs: 'row', sm: 'column' }} // Row layout for xs, column for larger sizes
+                                        alignItems="center"
+                                        justifyContent={"center"}
+                                    >
+                                        <Box display={'flex'} flexDirection={{xs:"row-reverse", md:"column-reverse"}} alignItems={'center'}>
+                                            <Box
+                                                display="flex"
+                                                flexDirection="column"
+                                                alignItems={{ xs: 'flex-start', sm: 'center' }} // Align items differently for xs
+                                            >
+                                                <Box display="flex" flexDirection={'column'} alignItems="center">
+                                                    {getWeatherIcon(day.conditions)}
+                                                    <Typography
+                                                        color='#296573'
+                                                        fontWeight={"600"}
+                                                        fontSize={{ xs: "24px", sm: "32px" }}
+                                                        ml={1} // Add margin left for spacing
+                                                    >
+                                                        {fahrenheitToCelsius(day.temp)} °C
+                                                    </Typography>
+                                                </Box>
                                             </Box>
-                                        </Grid2>
-                                    ))}
+                                            <Box width={{sm:"50%", md:"unset"}}>
+                                                <Typography color='#296573' fontWeight={"600"} fontSize={{ xs: "18px", sm: "22px" }}>
+                                                    {getDayName(day.datetime)}
+                                                </Typography>
+                                                <Typography color='lightslategray' fontWeight={"400"} fontSize={{ xs: "14px", sm: "16px" }}>
+                                                    {formatDayMonth(day.datetime)}
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                        <Box width={"min-content"}>
+                                            <Typography mt={1} display={'flex'} alignItems={"center"} color='lightslategray' gap={1} justifyContent={'center'}
+                                                fontWeight={"400"} fontSize={{ xs: "16px", sm: "18px" }}
+                                            >
+                                                <Box component="img" src={Humidity} width={{ xs: "40%", md: "15%" }} height={"auto"} /> {day.humidity}%
+                                            </Typography>
+                                            <Typography mt={2} color='lightslategray' fontWeight={"400"} fontSize={{ xs: "14px", sm: "16px" }}>
+                                                {day.conditions}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
                                 </Grid2>
                             ))}
-                        </Carousel>
-                    </Box>
-
-                    <Box display="flex" alignItems="center" justifyContent={"center"} gap={"5px"} mt={1}>
-                        <Typography color="#296573" fontSize={{ xs: "16px", sm: "18px" }} fontWeight={"400"}>
-                            {getWeatherAdvice(selectedDay !== 0 ? weatherData[selectedDay].conditions : current.conditions, selectedDay !== 0 ? weatherData[selectedDay].tempmax : current.temp)}
-                        </Typography>
-                    </Box>
-                </Box>
-                ) : selectedCity && !weatherData ? (
-                    <Box bgcolor={"#ffffff91"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "20px", lg: "40px" }, textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
-                        <Typography color="#313131" fontSize={{ xs: "28px", md: "32px" }} fontWeight={"700"}>Does not Exist</Typography>
-                        <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
-                            Type a valid city name to get weekly forecast data.
-                        </Typography>
-                    </Box>
-                ) : (
-                    <Box bgcolor={"#ffffff91"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "20px", lg: "40px" }, textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
-                        <Typography color="#313131" fontSize={{ xs: "28px", md: "32px" }} fontWeight={"700"}>Select a City</Typography>
-                        <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
-                            Search and select a city to see results. Try typing the first letters of the city you want.
-                        </Typography>
-                    </Box>
+                        </Grid2>
+                        <Grid2 size={{xs:12}}>
+                            <Grid2 padding={"5px 0px 5px 10px"} boxShadow={"0px 5px 10px rgba(0, 0, 0, 0.03)"} borderLeft={"1px solid #DBDFE9"} bgcolor={"#ffffffbf"}
+                            borderRight={"1px solid #DBDFE9"} borderTop={"1px solid #DBDFE9"} borderRadius={"12px 12px 0px 0px"}>
+                                <Typography color='#296573' fontSize={{xs:"16px", sm:"18px"}} fontWeight={600} display={'flex'} gap={"5px"}>
+                                    {getDayName(weatherData[selectedDay].datetime)}
+                                    <Typography color='lightslategray' fontWeight={"400"} fontSize={{xs:"16px", sm:"18px"}} >
+                                        {formatDayMonth(weatherData[selectedDay].datetime)}
+                                    </Typography>
+                                </Typography>
+                            </Grid2>
+                            <Carousel sx={{width:"100%"}}>
+                            {hourlyGroups.map((group, groupIndex) => (
+                                <Grid2
+                                key={groupIndex}
+                                container
+                                display="flex"
+                                justifyContent={'center'}
+                                bgcolor={"#ffffffbf"}
+                                sx={{
+                                    borderRadius: "0px 0px 12px 12px",
+                                    border: "1px solid #DBDFE9",
+                                    textAlign: "center",
+                                    boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.03)",
+                                }}
+                                >
+                                {group.map((day, index) => (
+                                    <Grid2
+                                    key={index}
+                                    size={{ xs: 12 / group.length, sm: 3, md: 2 }}
+                                    borderRight={index === group.length - 1 ? "none" : "1px solid #DBDFE9"}
+                                    padding={{ xs: "20px", xl: "40px" }}
+                                    >
+                                    <Box mb={2}>
+                                        <Typography color="#296573" fontWeight={"500"} fontSize={{ xs: "14px", sm: "18px" }}>
+                                            {day.datetime.split(':')[0]}:00
+                                        </Typography>
+                                    </Box>
+                                    <Box>
+                                        {/* Replace this with your icon rendering logic */}
+                                        {getWeatherIcon(day.conditions)}
+                                        <Typography color="#296573" fontWeight={"500"} fontSize={{ xs: "18px", sm: "24px" }}>
+                                        {fahrenheitToCelsius(day.temp)} °C
+                                        </Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography
+                                        mt={1}
+                                        display={"flex"}
+                                        alignItems={"center"}
+                                        color="lightslategray"
+                                        gap={1}
+                                        justifyContent={"center"}
+                                        fontWeight={"400"}
+                                        fontSize={{ xs: "12px", sm: "14px" }}
+                                        >
+                                        <img src={Humidity} width={"15%"} height={"auto"} /> {day.humidity}%
+                                        </Typography>
+                                        <Typography mt={2} color="lightslategray" fontWeight={"400"} fontSize={{ xs: "10px", sm: "12px" }}>
+                                        {day.conditions}
+                                        </Typography>
+                                    </Box>
+                                    </Grid2>
+                                ))}
+                                </Grid2>
+                            ))}
+                            </Carousel>
+                        </Grid2> 
+                    </Grid2>
                 )}
-            </Grid2>
-            <Box mt={2} sx={{ height: '300px', width: '100%' }}>
-                <Typography fontSize={{ xs: "18px", sm: "20px" }} fontWeight="600" color="#296573">Temperature Trend</Typography>
-                {selectedCity && (
-                                    <Grid2>
-                        <LineChart
-                            xAxis={[{scaleType: 'point', data: chartData?.map(point => point.time) }]}
-                            series={[
-                                {
-                                    data: chartData?.map(point => point.temperature),
-                                    area: true, showMark: false 
-                                }
-                            ]}
-                            width={500}
-                            height={300}
-                            sx={{
-                                [`& .${areaElementClasses.root}`]: {
-                                  fill: 'yellow',
-                                },
-                              }}                      
+                    <Grid2
+                        size={{
+                            xs: 11,
+                            sm: selectedCity ? 11 : 8,
+                            md: selectedCity ? 8 : 4.5,
+                            lg: 3,
+                            xl: 3
+                        }}
+                        display={"flex"}
+                        flexDirection={"column"}
+                        gap={4}
+                    >                    
+                        <Input fullWidth disableUnderline placeholder="Search City"
+                            sx={{ border: "1px solid #DBDFE9", borderRadius: "10px", padding: {xs:"5px", sm:"14px"}, backgroundColor:"#ffffffbf",
+                                fontSize: {xs:"18px", sm:"20px"}, boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)"}}
+                            startAdornment={
+                                searchTerm && (
+                                    <InputAdornment position="start">
+                                        <IconButton onClick={clearSearch}>
+                                            <Clear />
+                                        </IconButton>
+                                    </InputAdornment>
+                                )
+                            }
+                            endAdornment={
+                                <InputAdornment position="end">
+                                    <IconButton onClick={handleSearch}>
+                                        <Search />
+                                    </IconButton>
+                                </InputAdornment>
+                            } value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} onKeyDown={handleKeyDown}
                         />
+                        {selectedCity && weatherData ? (
+                            <Box width={{xs:"100%", sm:"unset"}} alignSelf={{xs:"center", sm:"unset"}} bgcolor={"#ffffffbf"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "10px", sm:"20px"}, alignItems:"center",
+                                textAlign: "center", boxShadow: "0px 5px 10px rgba(0, 0, 0, 0.03)" }} display={{xs:"unset", sm:"flex", lg:"unset"}}>
+                            {/* Existing weather details */}
+                            <Box display="flex" alignItems="center" flexDirection={'column'} justifyContent={"center"} gap={"5px"} mt={1} width={"100%"}>
+                                {selectedDay !== 0 ? getWeatherImages(weatherData[selectedDay].conditions) : getWeatherImages(current.conditions)}
+                                <Typography color="#296573" fontSize={{ xs: "16px", sm: "18px" }} fontWeight={"400"} sx={{display:"flex", alignItems:"center", justifyContent:"center"}}>
+                                    {selectedDay !== 0 ? weatherData[selectedDay].conditions : current.conditions}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Box display={'flex'} flexDirection={'column'} gap={"5px"}>
+                                    <Typography color="#296573" fontSize={"56px"} fontWeight={"700"}>
+                                        {selectedDay !== 0 ? fahrenheitToCelsius(weatherData[selectedDay].tempmax) : fahrenheitToCelsius(current.temp)} °C
+                                    </Typography>
+                                    <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
+                                        <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
+                                            {selectedCity}
+                                        </Typography>
+                                        <Typography color="#313131" fontSize={{ xs: "14px", sm: "16px" }} fontWeight={"400"}>
+                                            {formatDate(weatherData[selectedDay].datetime)}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+
+                                {/* Hourly forecast carousel */}
+                                <Grid2 mt={{xs:0, lg:2}} height={"fit-content"} display={'flex'} justifyContent={'center'}>
+                                {nextThreeHours.map((hour, i) => (
+                                    <Grid2 item key={i} size={{xs:"2", sm:"3"}} display={'flex'} justifyContent={'center'}  height={"fit-content"}>
+                                        <Box sx={{ minWidth: "100px", textAlign: "center" }}>
+                                            <Typography fontSize="14px">{hour.datetime.split(':')[0]}:00</Typography> {/* Show the hour */}
+                                            <Typography fontSize="16px" fontWeight="700">{fahrenheitToCelsius(hour.temp)}°C</Typography> {/* Show the temperature */}
+                                            <Typography fontSize="12px" color="gray" display={'flex'} justifyContent={'center'} alignItems={'center'}>
+                                                <Typography width={"35%"} mt={1}>
+                                                    {getWeatherIcon(hour.conditions)}
+                                                </Typography>
+                                                {hour.conditions}
+                                            </Typography> {/* Show conditions */}
+                                        </Box>
+                                    </Grid2>
+                                ))}
+                                </Grid2>
+
+                                <Box display="flex" alignItems="center" justifyContent={"center"} gap={"5px"} mt={1}>
+                                    <Typography color="#296573" fontSize={{ xs: "16px", sm: "18px" }} fontWeight={"400"}>
+                                        {getWeatherAdvice(selectedDay !== 0 ? weatherData[selectedDay].conditions : current.conditions, selectedDay !== 0 ? weatherData[selectedDay].tempmax : current.temp)}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+                        ) : !selectedCity && isCity ? (
+                            <Box bgcolor={"#ffffffbf"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "20px", lg: "40px" }, textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
+                                <Typography color="#313131" fontSize={{ xs: "28px", md: "32px" }} fontWeight={"700"}>Does not Exist</Typography>
+                                <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
+                                    Type a valid city name to get weekly forecast data.
+                                </Typography>
+                            </Box>
+                        ) : !selectedCity ? (
+                            <Box bgcolor={"#ffffffbf"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "20px", lg: "40px" }, textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
+                                <Typography color="#313131" fontSize={{ xs: "28px", md: "32px" }} fontWeight={"700"}>Select a City</Typography>
+                                <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
+                                    Search and select a city to see results. Try typing the first letters of the city you want.
+                                </Typography>
+                            </Box>
+                        ) : null}
                 </Grid2>
-                )}
-            </Box>
+                    <Grid2 size={{ xs: 11.2, sm: 9, md: 6.5, lg: 4.5, xl: 4 }}>
+                        {!selectedCity && (
+                            <Carousel>
+                                <Box onClick={() => {handleSearch("ankara"); setSearchTerm("ankara")}} textAlign={'center'} 
+                                    sx={{backgroundColor:"#ffffffbf", padding:"40px", cursor:"pointer",
+                                    boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px"}}>
+                                    <Box display={'flex'} flexDirection={'column'} gap={"5px"} justifyContent={'center'} alignItems={'center'} >
+                                        {Ankara.length > 0 && getCityImages("ankara", Ankara[0].conditions)}
+                                        <Typography color="#296573" fontSize={ "56px" } fontWeight={"700"}>{Ankara.length > 0 ? `${fahrenheitToCelsius(Ankara[0].tempmax)} °C` : 'No data'} </Typography>
+                                        <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
+                                            <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
+                                                Ankara
+                                            </Typography>
+                                            <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
+                                                {Ankara.length > 0 && formatDate(Ankara[0].datetime)}
+                                            </Typography>
+                                        </Box>
+                                        <Box display="flex" alignItems="center" justifyContent={"center"}>
+                                            <Box width={"20%"}>
+                                                {Ankara.length > 0 && getWeatherIcon(Ankara[0].conditions)}
+                                            </Box>
+                                            <Typography color="#296573" fontSize={{xs:"16px", sm:"18px"}} fontWeight={"400"}>
+                                            {Ankara.length > 0 && Ankara[0].conditions}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Box>
+                                <Box onClick={() => {handleSearch("istanbul"); setSearchTerm("istanbul")}} textAlign={'center'} sx={{backgroundColor:"#ffffffbf", 
+                                    padding:"40px", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px", cursor:"pointer"}}>
+                                    <Box display={'flex'} flexDirection={'column'} gap={"5px"} justifyContent={'center'} alignItems={'center'}>
+                                        {istanbul.length > 0 && getCityImages("istanbul", istanbul[0].conditions)}
+                                        <Typography color="#296573" fontSize={ "56px" } fontWeight={"700"}> {istanbul.length > 0 ? `${fahrenheitToCelsius(istanbul[0].tempmax)} °C` : 'No data'}</Typography>
+                                        <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
+                                            <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
+                                                İstanbul
+                                            </Typography>
+                                            <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
+                                                {istanbul.length > 0 && formatDate(istanbul[0].datetime)}
+                                            </Typography>
+                                        </Box>
+                                        <Box display="flex" alignItems="center" justifyContent={"center"}>
+                                            <Typography width={"20%"}>
+                                                {istanbul.length > 0 && getWeatherIcon(istanbul[0].conditions)}
+                                            </Typography>
+                                            <Typography color="#296573" fontSize={{xs:"16px", sm:"18px"}} fontWeight={"400"}>
+                                            {istanbul.length > 0 && istanbul[0].conditions}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Box>
+                                <Box onClick={() => {handleSearch("izmir"); setSearchTerm("izmir")}} textAlign={'center'} sx={{backgroundColor:"#ffffffbf", 
+                                    padding:"40px", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)", borderRadius: "10px", cursor:"pointer"}}>
+                                    <Box display={'flex'} flexDirection={'column'} gap={"5px"} justifyContent={'center'} alignItems={'center'}>
+                                        {izmir.length > 0 && getCityImages("izmir", izmir[0].conditions)}
+                                        <Typography color="#296573" fontSize={ "56px" } fontWeight={"700"}>{izmir.length > 0 ? `${fahrenheitToCelsius(izmir[0].tempmax)} °C` : 'No data'} </Typography>
+                                        <Box display={'flex'} flexDirection={'column'} gap={"10px"}>
+                                            <Typography color="#313131" fontSize={"32px"} fontWeight={"700"} sx={{ textTransform: 'capitalize' }}>
+                                                İzmir
+                                            </Typography>
+                                            <Typography color="#313131" fontSize={{xs:"14px", sm:"16px"}} fontWeight={"400"}>
+                                                {izmir.length > 0 && formatDate(izmir[0].datetime)}
+                                            </Typography>
+                                        </Box>
+                                        <Box display="flex" alignItems="center" justifyContent={"center"}>
+                                            <Typography width={"20%"}>
+                                                {izmir.length > 0 && getWeatherIcon(izmir[0].conditions)}
+                                            </Typography>
+                                            <Typography color="#296573" fontSize={{xs:"16px", sm:"18px"}} fontWeight={"400"}>
+                                            {izmir.length > 0 && izmir[0].conditions}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </Box>
+                            </Carousel>
+                        )}
+                    </Grid2>
+                    {/* <Grid2 mt={2} size={{xs:11, md:8}}>
+                        <Grid2 size={{xs:10, md:7}} bgcolor={"#ffffffbf"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "20px", lg: "40px" }, 
+                            textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
+                            <Box sx={{ minWidth: 120 }} mb={2} width={"fit-content"}>
+                                <FormControl fullWidth>
+                                    <InputLabel id="demo-simple-select-label">Filter</InputLabel>
+                                    <Select
+                                    labelId="demo-simple-select-label"
+                                    id="demo-simple-select"
+                                    value={filter}
+                                    label="Filter"
+                                    onChange={handleFilter}
+                                    >
+                                    <MenuItem value="temperature">
+                                        <Typography fontSize={{ xs: "18px", sm: "20px" }} fontWeight="600" color="#296573">
+                                            Temperature Trend
+                                        </Typography>      
+                                    </MenuItem>
+                                    <MenuItem value="humidity">
+                                        <Typography fontSize={{ xs: "18px", sm: "20px" }} fontWeight="600" color="#296573">
+                                            Humidity Trend
+                                        </Typography>      
+                                    </MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Box>                  
+                            <LineChart
+                                xAxis={[{scaleType: 'point', data: chartData2?.map(point => point.day) }]}
+                                series={[
+                                    {
+                                        data: chartData2?.map(point => point[filter]),
+                                        area: true, showMark: false ,
+                                    }
+                                ]}
+                                width={1200}
+                                height={300}
+                                sx={{
+                                    [`& .${areaElementClasses.root}`]: {
+                                    fill: 'url(#gradient)',
+                                    },
+                                    '& .MuiLineElement-root': {
+                                        strokeWidth: 0,
+                                    },
+                                }}                      
+                            >
+                                <defs>
+                                <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="red" />
+                                    <stop offset="50%" stopColor="#ffca00" />
+                                    <stop offset="100%" stopColor="#00c9ff"/>
+                                </linearGradient>
+                                </defs>
+                            </LineChart>
+                        </Grid2>
+                    </Grid2> */}
+                </>
+            )}
         </Grid2>
     );
 };

@@ -5,6 +5,7 @@ const API_URL = "https://weather.visualcrossing.com/VisualCrossingWebServices/re
 export const fetchData = async (location) => {
   try {
     const queryParams = new URLSearchParams({
+      // key: "HNDAG4NJCW27DUTLVYKC8YD3E",
       key: "TLMXZQLJF9TLVTXCLJN7AS36M",
     }).toString();
 
