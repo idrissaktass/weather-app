@@ -32,6 +32,11 @@ import RainyIcon from "../data/rainy.gif"
 import Storm from "../data/storm.gif"
 import Snow from "../data/snow.gif"
 import Humidity from "../data/humidity.png"
+import Overcast from "../data/overcast.gif"
+import SnowyNight from "../data/snowynight.gif"
+import CloudyNight from "../data/cloudynight.gif"
+import RainyNight from "../data/rainynight.gif"
+import ClearNight from "../data/clearnight.gif"
 
 const cache = {};
 
@@ -48,9 +53,14 @@ const MainScreen = () => {
     const [current, setCurrent] = useState("");
     const [xAxisData, setXAxisData] = useState([]);
     const [seriesData, setSeriesData] = useState([]);
-    const [filter, setFilter] = useState('temperature');
+    const [allHours, setAllHours ] = useState([]);
+    const [filter, setFilter] = useState('tempmax');
     const theme = useTheme();
     const isXs = useMediaQuery(theme.breakpoints.only('xs'));
+    const isSm = useMediaQuery(theme.breakpoints.only('sm'));
+    const isMd = useMediaQuery(theme.breakpoints.only('md'));
+    const isLg = useMediaQuery(theme.breakpoints.only('lg'));
+    const isXl = useMediaQuery(theme.breakpoints.only('xl'));
 
     const normalizeString = (str) => {
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -251,6 +261,7 @@ const MainScreen = () => {
     //     { day: "3", temperature: 16, humidity: 80 , datetime: "2024-09-12", conditions: "partially cloud"  },
     //     { day: "4", temperature: 14, humidity: 50 , datetime: "2024-09-15", conditions: "snow"  },
     // ];
+      
 
 
     // setXAxisData(chartData?.map(point => point.time));
@@ -298,6 +309,53 @@ const MainScreen = () => {
             return <Box component="img"  src={PartiallyCloudy} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>
         }
     };
+    
+    const isNightTime = (hour) => {
+        const hourString = hour.split(':')[0];
+        const hourInt = parseInt(hourString, 10);
+        
+        // Check if hour is between 19:00 (7 PM) and 05:00 (5 AM)
+        return hourInt >= 20 || hourInt < 6;
+    };
+    
+    
+    const getWeatherIcon2 = (conditions, hour) => {
+        const desc = conditions.toLowerCase();
+        const night = isNightTime(hour?.datetime);
+        console.log("night", night, hour)
+        if (desc.includes('snow')) {
+            return night 
+                ? <Box component="img" src={SnowyNight} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/> 
+                : <Box component="img" src={Snow} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>;
+        }
+        if (desc.includes('rain') && !desc.includes('snow')) {
+            console.log("rain", night)
+            return night 
+                ? <Box component="img" src={RainyNight} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>
+                : <Box component="img" src={RainyIcon} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>;
+        }
+        if (desc.includes('overcast') || desc.includes('cloud') && !desc.includes('rain') && !desc.includes('snow') && !desc.includes('partially')) {
+            console.log("cloud", night)
+            return <Box component="img" src={Overcast} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>;
+        }
+        if (desc.includes('clear')) {
+            console.log("nightttt", night)
+            return night
+                ? <Box component="img" src={ClearNight} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>
+                : <Box component="img" src={SunnyIcon} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>;
+        }
+        if (desc.includes('overcast')) {
+            return <Box component="img" src={Overcast} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>;
+        }
+        if (desc.includes('partially') && !desc.includes('rain')) {
+            return night 
+                ? <Box component="img" src={CloudyNight} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>
+                : <Box component="img" src={PartiallyCloudy} width={{xs:"50%", sm:"80%", md:"60%"}} height={"auto"} style={{backgroundColor:"transparent"}}/>;
+        }
+        return null;
+    };
+    
+
     const getCityImages = (city, conditions) => {
         const desc = conditions.toLowerCase();
         let imageSrc = null;
@@ -422,6 +480,7 @@ const MainScreen = () => {
     const nextThreeHours = getNextThreeHours(hourlyGroups);
     console.log("weatherData",weatherData)
     return (
+        <>
         <Grid2 container justifyContent={'center'} pt={15} gap={2} alignItems={selectedCity && {xs:"center", lg:"start"}} direction={selectedCity ? {xs:"column-reverse", lg:"row"}  : "row-reverse"}>
             {loading ?( <LoadingSpinner/>) :(
                 <>
@@ -543,7 +602,7 @@ const MainScreen = () => {
                                     </Box>
                                     <Box>
                                         {/* Replace this with your icon rendering logic */}
-                                        {getWeatherIcon(day.conditions)}
+                                        {getWeatherIcon2(day.conditions, day)}
                                         <Typography color="#296573" fontWeight={"500"} fontSize={{ xs: "18px", sm: "24px" }}>
                                         {fahrenheitToCelsius(day.temp)} °C
                                         </Typography>
@@ -639,7 +698,7 @@ const MainScreen = () => {
                                             <Typography fontSize="16px" fontWeight="700">{fahrenheitToCelsius(hour.temp)}°C</Typography> {/* Show the temperature */}
                                             <Typography fontSize="12px" color="gray" display={'flex'} justifyContent={'center'} alignItems={'center'}>
                                                 <Typography width={"35%"} mt={1}>
-                                                    {getWeatherIcon(hour.conditions)}
+                                                    {getWeatherIcon2(hour.conditions, hour)}
                                                 </Typography>
                                                 {hour.conditions}
                                             </Typography> {/* Show conditions */}
@@ -747,10 +806,14 @@ const MainScreen = () => {
                             </Carousel>
                         )}
                     </Grid2>
-                    {/* <Grid2 mt={2} size={{xs:11, md:8}}>
-                        <Grid2 size={{xs:10, md:7}} bgcolor={"#ffffffbf"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9", padding: { xs: "20px", lg: "40px" }, 
+                </>
+            )}
+        </Grid2>
+        {selectedCity && (
+                    <Grid2 container mt={2} justifyContent={"center"} pb={4}>
+                        <Grid2 size={{xs:11.8, sm:11, md:9, lg:8, xl:7}} bgcolor={"#ffffffbf"} sx={{ borderRadius: "12px", border: "1px solid #DBDFE9",
                             textAlign: "center", boxShadow:"0px 5px 10px rgba(0, 0, 0, 0.03)" }}>
-                            <Box sx={{ minWidth: 120 }} mb={2} width={"fit-content"}>
+                            <Grid2 marginInline={"10px"} marginTop={"10px"}>
                                 <FormControl fullWidth>
                                     <InputLabel id="demo-simple-select-label">Filter</InputLabel>
                                     <Select
@@ -760,7 +823,7 @@ const MainScreen = () => {
                                     label="Filter"
                                     onChange={handleFilter}
                                     >
-                                    <MenuItem value="temperature">
+                                    <MenuItem value="tempmax">
                                         <Typography fontSize={{ xs: "18px", sm: "20px" }} fontWeight="600" color="#296573">
                                             Temperature Trend
                                         </Typography>      
@@ -772,39 +835,42 @@ const MainScreen = () => {
                                     </MenuItem>
                                     </Select>
                                 </FormControl>
-                            </Box>                  
-                            <LineChart
-                                xAxis={[{scaleType: 'point', data: chartData2?.map(point => point.day) }]}
-                                series={[
-                                    {
-                                        data: chartData2?.map(point => point[filter]),
-                                        area: true, showMark: false ,
-                                    }
-                                ]}
-                                width={1200}
-                                height={300}
-                                sx={{
-                                    [`& .${areaElementClasses.root}`]: {
-                                    fill: 'url(#gradient)',
-                                    },
-                                    '& .MuiLineElement-root': {
-                                        strokeWidth: 0,
-                                    },
-                                }}                      
-                            >
-                                <defs>
-                                <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="red" />
-                                    <stop offset="50%" stopColor="#ffca00" />
-                                    <stop offset="100%" stopColor="#00c9ff"/>
-                                </linearGradient>
-                                </defs>
-                            </LineChart>
+                            </Grid2>                  
+                            <Grid2 size={{xs:11}} overflow={"auto"} sx={{ minWidth: 120 }} mb={2} display={'flex'} justifyContent={'center'}>
+                                <LineChart
+                                    xAxis={[{scaleType: 'point', data: weatherData?.map(point => getDayName(point.datetime)) }]}
+                                    series={[
+                                        {
+                                            data: weatherData?.map((point) =>
+                                                filter === "tempmax" ? fahrenheitToCelsius(point[filter]) : point[filter]
+                                            ),
+                                            area: true, showMark: false ,
+                                        }
+                                    ]}
+                                    width={isXs ? 550 : isSm ? 600 : isMd ? 700 : isLg ? 750 : 900}
+                                    height={300}
+                                    sx={{
+                                        [`& .${areaElementClasses.root}`]: {
+                                        fill: 'url(#gradient)',
+                                        },
+                                        '& .MuiLineElement-root': {
+                                            strokeWidth: 0,
+                                        },
+                                    }}                      
+                                >
+                                    <defs>
+                                    <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="red" />
+                                        <stop offset="50%" stopColor="#ffca00" />
+                                        <stop offset="100%" stopColor="#00c9ff"/>
+                                    </linearGradient>
+                                    </defs>
+                                </LineChart>
+                            </Grid2>
                         </Grid2>
-                    </Grid2> */}
-                </>
-            )}
-        </Grid2>
+                    </Grid2>
+                    )}
+        </>
     );
 };
 
