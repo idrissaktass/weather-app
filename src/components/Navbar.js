@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from "react";
 import { useMediaQuery } from 'react-responsive';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -21,7 +20,6 @@ import { ReactComponent as HeartBlue } from '../../data/heart-blue.svg';
 import { ReactComponent as HeartWhite } from '../../data/heart-white.svg';
 import './Navbar.scss'
 import UserDisplay from '../home/UserDisplay';
-
 const Navbar = () => {
   const auth = getAuth();
   const navigate = useNavigate()
@@ -33,9 +31,10 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [email, setEmail] = useState(null);
 
-  const isMobile = useMediaQuery({ query: '(max-width: 900px)' });
+  const isMobile = useMediaQuery({ query: '(min-width: 500px) and (max-width: 900px)' });
   const isSmallerThan1100px = useMediaQuery({ query: '(max-width: 1100px)' });
   const isMedium = useMediaQuery({ query: '(max-width: 1500px)' });
+  const isXsMobile = useMediaQuery({ query: '(max-width: 500px)' });
 
   const isMymoodPage = location.pathname === "/mymood";
   const isSessionPage = location.pathname === "/session";
@@ -54,7 +53,7 @@ const Navbar = () => {
 
       try {
         const response = await fetch(`${URL}/getProfile/${user.uid}`, {
-          headers: {
+            headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${user.accessToken}`
           }
@@ -99,6 +98,7 @@ const Navbar = () => {
   const userLink = role === 'user' && (
     isTherapyPage ? (
       <Button
+        sx={{display:"flex", flexDirection:(isMobile || isXsMobile) ? "column" : "unset"}}
         reloadDocument
         component={RouterLink}
         to="/book-therapist"
@@ -112,6 +112,7 @@ const Navbar = () => {
         component={RouterLink}
         to="/book-therapist"
         sx={{
+          display:"flex", flexDirection:(isMobile || isXsMobile) ? "column" : "unset",
           m: 0,
           gap: "8px",
           "&:hover": {
@@ -140,6 +141,7 @@ const Navbar = () => {
   const therapistLink = role === 'therapist' && (
     isTherapist ? (
       <Button
+        sx={{display:"flex", flexDirection:(isMobile || isXsMobile) ? "column" : "unset"}}
         component={RouterLink}
         reloadDocument
         to="/therapist-view"
@@ -153,6 +155,7 @@ const Navbar = () => {
         component={RouterLink}
         to="/therapist-view"
         sx={{
+          display:"flex", flexDirection:(isMobile || isXsMobile) ? "column" : "unset",
           m: 0,
           gap: "8px",
           "&:hover": {
@@ -201,11 +204,18 @@ const Navbar = () => {
 
   return (
     <>
-      <AppBar position="static" sx={{ bgcolor: "#FFF7F1", my: 3, color: "primary.main" }} elevation={0} ref={node}>
+      <AppBar position={(isMobile || isXsMobile) ? "fixed" : "static"}       
+      sx={{
+        bgcolor: "#FFF7F1",
+        my: 3,
+        color: "primary.main",
+        bottom: (isMobile || isXsMobile)  ? 0 : 'auto',
+        top: (isMobile || isXsMobile)  ? 'auto' : 0, 
+      }} elevation={0} ref={node}>
         <Toolbar>
-          {isMobile ? (
-            <>
-            <Box display={"flex"} height={"50px"} width={"350px"} overflow={"hidden"} alignItems={"center"} >
+        {isXsMobile && (
+            <Grid display={"flex"} alignItems={"center"} justifyContent={"space-between"} width={"100%"}>
+            <Box display={"flex"} height={"fit-content"} width={"fit-content"} overflow={"hidden"} alignItems={"center"} flexDirection={"column"} >
               <SvgIcon component={IconBlue} inheritViewBox style={{width:"50px", height:"auto"}}/>
               {/* <SvgIcon component={FullBlue} inheritViewBox style={{width:"125px", height:"120px"}}/> */}
                <Typography
@@ -218,6 +228,144 @@ const Navbar = () => {
               </Typography>
               {/*<Typography variant="body2SemiBold" sx={{ pb: 5, flexGrow: 1, color: "primary.darkerBlue" }}>BETA</Typography> */}
             </Box>
+            {isSessionPage ? (
+                  <Button 
+                    component={RouterLink}
+                    reloadDocument
+                    to='/session'
+                    variant="header"
+                    sx={{
+                      display:"flex",
+                      flexDirection:"column",
+                      color: "primary.main",
+                      "&:hover": {
+                        color: "primary.main",
+                      }
+                    }}
+                  >
+                    <SvgIcon component={MySessionWhite} inheritViewBox />
+                    <Typography variant="body2Bold" sx={{ color: "secondary.main" }}>MYSESSION</Typography>
+                  </Button>
+                ) : (
+                  <Button
+                    // href="/session"
+                    onClick={() => navigate('/session')}
+                    sx={{
+                      display:"flex",
+                      flexDirection:"column",
+                      m: 0,
+                      gap: "8px",
+                      color: "primary.backgroundBlue",
+                      "&:hover": {
+                        color: "primary.backgroundBlue",
+                        background: "none"
+                      }
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        bgcolor: "primary.backgroundBlue",
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <SvgIcon component={MySessionBlue} inheritViewBox />
+                    </Box>
+                    <Typography variant="body2Bold" sx={{ color: "primary.main" }}>MYSESSION</Typography>
+                  </Button>
+                )}
+                {isMymoodPage ? (
+                  <Button
+                    sx={{
+                      display:"flex",
+                      flexDirection:"column",
+                    }}
+                    component={RouterLink}
+                    reloadDocument
+                    to="/mymood"
+                    variant="header"
+                  >
+                    <SvgIcon component={MyMood} inheritViewBox />
+                    <Typography variant="body2Bold">MYMOOD</Typography>
+                  </Button>
+                ) : (
+                  <Button
+                    component={RouterLink}
+                    to="/mymood"
+                    sx={{
+                      display:"flex",
+                      flexDirection:"column",
+                      m: 0,
+                      gap: "8px",
+                      "&:hover": {
+                        background: "none",
+                      }
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        bgcolor: "primary.backgroundBlue",
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <SvgIcon component={MyMood} inheritViewBox fill="primary.main" />
+                    </Box>
+                    <Typography variant="body2Bold">MYMOOD</Typography>
+                  </Button>
+                )}
+                {isBlogPage ? (
+                  <Button
+                  sx={{
+                    display:"flex",
+                    flexDirection:"column",
+                  }}
+                  reloadDocument
+                  component={RouterLink}
+                  to="/blogs"
+                  variant="header"
+                >
+                  <SvgIcon component={Articles} inheritViewBox />
+                  <Typography variant="body2Bold">BLOGS</Typography>
+                </Button>
+              ) : (
+                <Button
+                  component={RouterLink}
+                  to="/blogs"
+                  sx={{
+                    display:"flex",
+                    flexDirection:"column",
+                    m: 0,
+                    gap: "8px",
+                    "&:hover": {
+                      background: "none",
+                    }
+                  }}
+                >
+                  <Box
+                    sx={{
+                      bgcolor: "primary.backgroundBlue",
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "50%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <SvgIcon component={Articles} inheritViewBox fill="primary.main" />
+                  </Box>
+                  <Typography variant="body2Bold">BLOGS</Typography>
+                </Button>
+              )}
             <Grid container sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }} spacing={0}>
               <Typography
                 variant="body2Bold"
@@ -228,8 +376,8 @@ const Navbar = () => {
               <FontAwesomeIcon
                 icon="fa-solid fa-bars"
                 size="xl"
-                onClick={handleMenuToggle} />
-              <CSSTransition
+                onClick={handleMenuToggle} />             
+            <CSSTransition
                 in={isMenuOpen}
                 timeout={300}
                 classNames="mobile-menu-transition"
@@ -401,106 +549,6 @@ const Navbar = () => {
                         </Typography>
                       </Button>
                     )}
-                    {isSessionPage ? (
-                      <Button
-                        to="/session"
-                        component={RouterLink}
-                        reloadDocument
-                        sx={{
-                          display: "block",
-                          color: "secondary.main",
-                          "&:hover": {
-                            color: "secondary.main",
-                          },
-                          bgcolor: "secondary.main",
-                          my: "10px",
-                          mx: "5px"
-                        }}
-                      >
-                        <Typography
-                          component="div"
-                          alignItems={"center"}
-                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
-                        >
-                          <SvgIcon
-                            component={MySessionBlue}
-                            inheritViewBox />
-                          <Typography component="div" variant="body2Bold" sx={{ color: "primary.main" }}>MYSESSION</Typography>
-                        </Typography>
-                      </Button>
-                    ) : (
-                      <Button
-                        to="/session"
-                        component={RouterLink}
-                        sx={{
-                          display: "block",
-                          color: "primary.main",
-                          "&:hover": {
-                            color: "primary.main",
-                          },
-                          my: "5px"
-                        }}
-                      >
-                        <Typography
-                          component="div"
-                          alignItems={"center"}
-                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
-                        >
-                          <SvgIcon
-                            component={MySessionWhite}
-                            inheritViewBox />
-                          <Typography component="div" variant="body2Bold" sx={{ color: "secondary.main" }}>MYSESSION</Typography>
-                        </Typography>
-                      </Button>
-                    )}
-                    {isMymoodPage ? (
-                      <Button
-                        to="/mymood"
-                        reloadDocument
-                        component={RouterLink}
-                        sx={{
-                          color: "primary.main",
-                          display: "block",
-                          bgcolor: "secondary.main",
-                          my: "10px",
-                          mx: "5px"
-                        }}
-                      >
-                        <Typography
-                          variant="body2Bold"
-                          component="div"
-                          alignItems={"center"}
-                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
-                        >
-                          <SvgIcon
-                            component={MyMood}
-                            inheritViewBox />
-                          <div>MYMOOD</div>
-                        </Typography>
-                      </Button>
-                    ) : (
-                      <Button
-                        to="/mymood"
-                        component={RouterLink}
-                        sx={{
-                          color: "secondary.main",
-                          display: "block",
-                          my: "5px"
-                        }}
-                      >
-                        <Typography
-                          variant="body2Bold"
-                          component="div"
-                          alignItems={"center"}
-                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
-                        >
-                          <SvgIcon
-                            component={MyMood}
-                            inheritViewBox />
-                          <div>MYMOOD</div>
-                        </Typography>
-                      </Button>
-                    )}
                     {user && role === 'user' && (
                       isTherapyPage ? (
                         <Button
@@ -599,54 +647,6 @@ const Navbar = () => {
                           </Typography>
                         </Button>
                       ))}
-                    {isBlogPage ? (
-                      <Button
-                        to="/blogs"
-                        component={RouterLink}
-                        reloadDocument
-                        sx={{
-                          color: "primary.main",
-                          display: "block",
-                          bgcolor: "secondary.main",
-                          my: "10px",
-                          mx: "5px"
-                        }}
-                      >
-                        <Typography
-                          variant="body2Bold"
-                          component="div"
-                          alignItems={"center"}
-                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
-                        >
-                          <SvgIcon
-                            component={Articles}
-                            inheritViewBox />
-                          <div>BLOGS</div>
-                        </Typography>
-                      </Button>
-                    ) : (
-                      <Button
-                        to="/blogs"
-                        component={RouterLink}
-                        sx={{
-                          color: "secondary.main",
-                          display: "block",
-                          my: "5px"
-                        }}
-                      >
-                        <Typography
-                          variant="body2Bold"
-                          component="div"
-                          alignItems={"center"}
-                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
-                        >
-                          <SvgIcon
-                            component={Articles}
-                            inheritViewBox />
-                          <div>BLOGS</div>
-                        </Typography>
-                      </Button>
-                  )}
                      {isCornerPage ? (
                       <Button
                         to="/calm-corner"
@@ -706,8 +706,403 @@ const Navbar = () => {
                 </div>
               </CSSTransition>
             </Grid>
-            </>
-          ) : (
+            </Grid>
+          )}
+          {isMobile ? (
+            <Grid display={"flex"} alignItems={"center"} justifyContent={"space-between"} width={"100%"}>
+            <Box display={"flex"} flexDirection={"column"} height={"fit-content"} width={"fit-content"} overflow={"hidden"} alignItems={"center"} >
+              <SvgIcon component={IconBlue} inheritViewBox style={{width:"50px", height:"auto"}}/>
+              {/* <SvgIcon component={FullBlue} inheritViewBox style={{width:"125px", height:"120px"}}/> */}
+               <Typography
+                variant="sb24Bold"
+                component={RouterLink}
+                to="/get-started"
+                sx={{ color: "rgb(92, 131, 191)", textDecoration: 'none', paddingBottom:"5px" }}
+              >
+                pokamind
+              </Typography>
+              {/*<Typography variant="body2SemiBold" sx={{ pb: 5, flexGrow: 1, color: "primary.darkerBlue" }}>BETA</Typography> */}
+            </Box>
+            {isSessionPage ? (
+                  <Button 
+                    component={RouterLink}
+                    reloadDocument
+                    to='/session'
+                    variant="header"
+                    sx={{
+                      display:"flex",
+                      flexDirection:"column",
+                      color: "primary.main",
+                      "&:hover": {
+                        color: "primary.main",
+                      }
+                    }}
+                  >
+                    <SvgIcon component={MySessionWhite} inheritViewBox />
+                    <Typography variant="body2Bold" sx={{ color: "secondary.main" }}>MYSESSION</Typography>
+                  </Button>
+                ) : (
+                  <Button
+                    // href="/session"
+                    onClick={() => navigate('/session')}
+                    sx={{
+                      display:"flex",
+                      flexDirection:"column",
+                      m: 0,
+                      gap: "8px",
+                      color: "primary.backgroundBlue",
+                      "&:hover": {
+                        color: "primary.backgroundBlue",
+                        background: "none"
+                      }
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        bgcolor: "primary.backgroundBlue",
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <SvgIcon component={MySessionBlue} inheritViewBox />
+                    </Box>
+                    <Typography variant="body2Bold" sx={{ color: "primary.main" }}>MYSESSION</Typography>
+                  </Button>
+                )}
+                {isMymoodPage ? (
+                  <Button
+                    sx={{
+                      display:"flex",
+                      flexDirection:"column",
+                    }}
+                    component={RouterLink}
+                    reloadDocument
+                    to="/mymood"
+                    variant="header"
+                  >
+                    <SvgIcon component={MyMood} inheritViewBox />
+                    <Typography variant="body2Bold">MYMOOD</Typography>
+                  </Button>
+                ) : (
+                  <Button
+                    component={RouterLink}
+                    to="/mymood"
+                    sx={{
+                      display:"flex",
+                      flexDirection:"column",
+                      m: 0,
+                      gap: "8px",
+                      "&:hover": {
+                        background: "none",
+                      }
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        bgcolor: "primary.backgroundBlue",
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <SvgIcon component={MyMood} inheritViewBox fill="primary.main" />
+                    </Box>
+                    <Typography variant="body2Bold">MYMOOD</Typography>
+                  </Button>
+                )}
+                {isBlogPage ? (
+                  <Button
+                  sx={{
+                    display:"flex",
+                    flexDirection:"column",
+                  }}
+                  reloadDocument
+                  component={RouterLink}
+                  to="/blogs"
+                  variant="header"
+                >
+                  <SvgIcon component={Articles} inheritViewBox />
+                  <Typography variant="body2Bold">BLOGS</Typography>
+                </Button>
+              ) : (
+                <Button
+                  component={RouterLink}
+                  to="/blogs"
+                  sx={{
+                    display:"flex",
+                    flexDirection:"column",
+                    m: 0,
+                    gap: "8px",
+                    "&:hover": {
+                      background: "none",
+                    }
+                  }}
+                >
+                  <Box
+                    sx={{
+                      bgcolor: "primary.backgroundBlue",
+                      width: "48px",
+                      height: "48px",
+                      borderRadius: "50%",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <SvgIcon component={Articles} inheritViewBox fill="primary.main" />
+                  </Box>
+                  <Typography variant="body2Bold">BLOGS</Typography>
+                </Button>
+              )}
+              {userLink} {therapistLink}
+            <Grid container sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center" }} spacing={0}>
+              <Typography
+                variant="body2Bold"
+                sx={{ pr: 2 }}
+              >
+            <Grid />
+              </Typography>
+              <SvgIcon component={MyMood} onClick={handleMenuToggle}/>
+              <CSSTransition
+                in={isMenuOpen}
+                timeout={300}
+                classNames="mobile-menu-transition"
+                unmountOnExit
+              >
+                <div className="mobile_menu">
+                  <Grid sx={{ display: "flex", flexDirection: "column" }}>
+                    <Box sx={{ pr: 3, pb: 3, display: "flex", justifyContent: "end" }}>
+                      <FontAwesomeIcon
+                        icon="fa-solid fa-xmark"
+                        size="xl"
+                        style={{ color: '#ffffff' }}
+                        onClick={handleMenuToggle} />
+                    </Box>
+
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                      <Typography
+                        variant="body2Bold"
+                        component="div"
+                        sx={{ color: "secondary.main", display: "flex", alignItems: "center", pl: 2 }}
+                      >
+                    <Grid />
+                      </Typography>
+                      <Dropdown>
+                        <Dropdown.Toggle variant="text" id="dropdown-basic">
+                          <Avatar name={email || 'default'} size={32} variant="beam" />
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu>
+                          {user ? (
+                            <>
+                            <Dropdown.Item onClick={() => navigate('/user-profile')}>MyProfile</Dropdown.Item>
+
+
+                            <Dropdown.Item onClick={() => auth.signOut().then(() => {
+                              localStorage.removeItem('user');
+                              localStorage.removeItem('role');
+                              sessionStorage.clear();
+                              navigate('/');
+                            }
+                            )}>Sign Out</Dropdown.Item>
+                            <Dropdown.Item onClick={handleDeleteAccount}>Delete Account</Dropdown.Item>
+                            </>
+                          ) : (
+                            <Dropdown.Item onClick={() => navigate('/auth')}>Login</Dropdown.Item>
+                          )}
+                        </Dropdown.Menu>
+                      </Dropdown>
+                    </Box>
+                    {// free tier with no premium_status (no subscription)
+                      role !== "admin" && tier === "free" && !premium_status ?
+                        (
+
+                          <Button
+                            component={RouterLink}
+                            to="/plans"
+                            sx={{
+                              color: "secondary.main",
+                              display: "block",
+                              my: "5px"
+                            }}
+                          >
+                            <Typography
+                              variant="body2Bold"
+                              component="div"
+                              alignItems={"center"}
+                              sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
+                            >
+
+                              <div>TRY PREMIUM</div>
+                            </Typography>
+                          </Button>
+                        ) :
+                        // problem with premium_status like "overdue"
+                        role !== "admin" && tier === "free" && premium_status ?
+                          (
+                            // <a href= className="no-style d-block hamburger-menu_links text-danger">
+                            //   Fix subscription
+                            // </a>
+                            <Button
+                              href={process.env.REACT_APP_StripeCustomerPortal + `?prefilled_email=${encodeURIComponent(user.email)}`}
+                              sx={{
+                                color: "secondary.main",
+                                display: "block",
+                                my: "5px"
+                              }}
+                            >
+                              <Typography
+                                variant="body2Bold"
+                                component="div"
+                                alignItems={"center"}
+                                sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
+                              >
+
+                                <div>FIX SUBSCRIPTION</div>
+                              </Typography>
+                            </Button>
+                          ) : (
+                            // active subscription
+                            role !== "admin" && tier === "premium" &&
+                            // <a href={process.env.REACT_APP_StripeCustomerPortal + `?prefilled_email=${user.email}`} className="no-style d-block hamburger-menu_links">
+                            //   Manage subscription
+                            // </a>
+                            <Button
+                              href={process.env.REACT_APP_StripeCustomerPortal + `?prefilled_email=${encodeURIComponent(user.email)}`}
+                              sx={{
+                                color: "secondary.main",
+                                display: "block",
+                                my: "5px"
+                              }}
+                            >
+                              <Typography
+                                variant="body2Bold"
+                                component="div"
+                                alignItems={"center"}
+                                sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
+                              >
+
+                                <div>MANAGE SUBSCRIPTION</div>
+                              </Typography>
+                            </Button>
+
+                          )
+                    }
+                    {isHomePage ? (
+                      <Button
+                        reloadDocument
+                        component={RouterLink}
+                        to="/get-started"
+                        sx={{
+                          color: "primary.main",
+                          display: "block",
+                          bgcolor: "secondary.main",
+                          my: "10px",
+                          mx: "5px"
+                        }}
+                      >
+                        <Typography
+                          variant="body2Bold"
+                          alignItems={"center"}
+                          component="div"
+                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
+                        >
+                          <SvgIcon
+                            component={Home}
+                            inheritViewBox />
+                          <div>HOME</div>
+                        </Typography>
+                      </Button>
+                    ) : (
+                      <Button
+                        to="/get-started"
+                        component={RouterLink}
+                        sx={{
+                          color: "secondary.main",
+                          display: "block",
+                          my: "5px"
+                        }}
+                      >
+                        <Typography
+                          variant="body2Bold"
+                          component="div"
+                          alignItems={"center"}
+                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
+                        >
+                          <SvgIcon
+                            component={Home}
+                            inheritViewBox />
+                          <div>HOME</div>
+                        </Typography>
+                      </Button>
+                    )}
+                     {isCornerPage ? (
+                      <Button
+                        to="/calm-corner"
+                        component={RouterLink}
+                        reloadDocument
+                        sx={{
+                          color: "primary.main",
+                          display: "block",
+                          bgcolor: "secondary.main",
+                          my: "10px",
+                          mx: "5px"
+                        }}
+                      >
+                        <Typography
+                          variant="body2Bold"
+                          component="div"
+                          alignItems={"center"}
+                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
+                        >
+                          <SvgIcon
+                            component={HeartBlue}
+                            inheritViewBox />
+                          <div>CALM CORNER</div>
+                        </Typography>
+                      </Button>
+                    ) : (
+                      <Button
+                        to="/calm-corner"
+                        component={RouterLink}
+                        sx={{
+                          color: "secondary.main",
+                          display: "block",
+                          my: "5px"
+                        }}
+                      >
+                        <Typography
+                          variant="body2Bold"
+                          component="div"
+                          alignItems={"center"}
+                          sx={{ display: "flex", justifyContent: "end", gap: "6px" }}
+                        >
+                          <SvgIcon
+                            component={HeartWhite}
+                            inheritViewBox />
+                          <div>CALM CORNER</div>
+                        </Typography>
+                      </Button>
+                    )}
+                    <Button
+                      to="/sos"
+                      component={RouterLink}
+                      sx={{ alignSelf: "end" }}
+                    >
+                      <Typography color="#FFA1A1" variant="sb16Bold" textAlign={"end"}>SOS</Typography>
+                    </Button>
+                  </Grid>
+                </div>
+              </CSSTransition>
+            </Grid>
+            </Grid>
+          ) : !isXsMobile && (
             <Grid container flexDirection={"column"} justifyContent={"center"}>
             <Grid display={"flex"} justifyContent={"space-between"}>
               <Box display={"flex"} height={"50px"} width={"fit-content"} overflow={"hidden"} alignItems={"center"} >
@@ -782,7 +1177,7 @@ const Navbar = () => {
                       }
                       )}>Sign Out</Dropdown.Item>
                       <Dropdown.Item onClick={handleDeleteAccount}>Delete Account</Dropdown.Item>
-                    </>
+                      </>
                   ) : (
                     <Dropdown.Item onClick={() => navigate('/auth')}>Login</Dropdown.Item>
                   )}
@@ -1001,25 +1396,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-=======
-import { AppBar, Toolbar, Typography } from "@mui/material";
-import React from "react";
-import Logo from "../data/logo.png";
-
-const Navbar = () => {
-    
-    const handleRefresh = () => {
-        window.location.reload();
-    };
-
-    return (
-        <AppBar sx={{ display: "flex", alignItems: "center", backgroundColor: "#296573" }}>
-            <Toolbar sx={{ display: "flex", justifyContent: "space-between", width: { xs: "90%", sm: "80%" }, padding: "10px" }}>
-                <img src={Logo} alt="Logo" width={"auto"} height={"45px"}  onClick={handleRefresh} style={{ cursor: "pointer" }}/>
-            </Toolbar>
-        </AppBar>
-    );
-};
-
-export default Navbar;
->>>>>>> a5699c56f54cdde9a3d3374645475ae6f5b2fcd3
