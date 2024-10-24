@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from "react";
 import { useMediaQuery } from 'react-responsive';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -1000,3 +1001,25 @@ const Navbar = () => {
 };
 
 export default Navbar;
+=======
+import { AppBar, Toolbar, Typography } from "@mui/material";
+import React from "react";
+import Logo from "../data/logo.png";
+
+const Navbar = () => {
+    
+    const handleRefresh = () => {
+        window.location.reload();
+    };
+
+    return (
+        <AppBar sx={{ display: "flex", alignItems: "center", backgroundColor: "#296573" }}>
+            <Toolbar sx={{ display: "flex", justifyContent: "space-between", width: { xs: "90%", sm: "80%" }, padding: "10px" }}>
+                <img src={Logo} alt="Logo" width={"auto"} height={"45px"}  onClick={handleRefresh} style={{ cursor: "pointer" }}/>
+            </Toolbar>
+        </AppBar>
+    );
+};
+
+export default Navbar;
+>>>>>>> a5699c56f54cdde9a3d3374645475ae6f5b2fcd3
